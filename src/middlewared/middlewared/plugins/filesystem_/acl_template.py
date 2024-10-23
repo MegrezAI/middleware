@@ -1,9 +1,17 @@
+from middlewared.api import api_method
+from middlewared.api.current import (
+    AclTemplateEntry,
+    AclTemplateByPathArgs, AclTemplateByPathResult,
+    AclTemplateCreateArgs, AclTemplateCreateResult,
+    AclTemplateUpdateArgs, AclTemplateUpdateResult,
+    AclTemplateDeleteArgs, AclTemplateDeleteResult,
+)
 from middlewared.service import CallError, CRUDService, ValidationErrors
-from middlewared.service import accepts, private, returns
-from middlewared.schema import Bool, Dict, Int, List, Str, Ref, Patch, OROperator
+from middlewared.service import private
 from middlewared.plugins.smb import SMBBuiltin
 from middlewared.utils.directoryservices.constants import DSStatus, DSType
-from .utils import ACLType
+from middlewared.utils.filesystem.acl import FS_ACL_Type, gen_aclstring_posix1e
+from .utils import canonicalize_nfs4_acl
 
 import middlewared.sqlalchemy as sa
 import errno
@@ -29,44 +37,24 @@ class ACLTemplateService(CRUDService):
         datastore_prefix = 'acltemplate_'
         namespace = 'filesystem.acltemplate'
         cli_private = True
-
-    ENTRY = Patch(
-        'acltemplate_create', 'acltemplate_entry',
-        ('add', Int('id')),
-        ('add', Bool('builtin')),
-    )
+        entry = AclTemplateEntry
+        role_prefix='FILESYSTEM_ATTRS'
 
     @private
     async def validate_acl(self, data, schema, verrors):
-        acltype = ACLType[data['acltype']]
-        aclcheck = acltype.validate({'dacl': data['acl']})
-        if not aclcheck['is_valid']:
-            for err in aclcheck['errors']:
-                if err[2]:
-                    v = f'{schema}.{err[0]}.{err[2]}'
-                else:
-                    v = f'{schema}.{err[0]}'
-
-                verrors.add(v, err[1])
-
-        if acltype is ACLType.POSIX1E:
-            await self.middleware.call(
-                "filesystem.gen_aclstring_posix1e",
-                copy.deepcopy(data["acl"]), False, verrors
-            )
+        acltype = FS_ACL_Type(data['acltype'])
+        if acltype is FS_ACL_Type.POSIX1E:
+            gen_aclstring_posix1e(copy.deepcopy(data['acl']), False, verrors)
 
         for idx, ace in enumerate(data['acl']):
             if ace.get('id') is None:
                 verrors.add(f'{schema}.{idx}.id', 'null id is not permitted.')
 
-    @accepts(Dict(
-        "acltemplate_create",
-        Str("name", required=True),
-        Str("acltype", required=True, enum=["NFS4", "POSIX1E"]),
-        Str("comment"),
-        OROperator(Ref('nfs4_acl'), Ref('posix1e_acl'), name='acl', required=True),
-        register=True
-    ), roles=['FILESYSTEM_ATTRS_WRITE'])
+    @api_method(
+        AclTemplateCreateArgs,
+        AclTemplateCreateResult,
+        roles=['FILESYSTEM_ATTRS_WRITE']
+    )
     async def do_create(self, data):
         """
         Create a new filesystem ACL template.
@@ -89,13 +77,9 @@ class ACLTemplateService(CRUDService):
         )
         return await self.get_instance(data['id'])
 
-    @accepts(
-        Int('id'),
-        Patch(
-            'acltemplate_create',
-            'acltemplate_update',
-            ('attr', {'update': True})
-        ),
+    @api_method(
+        AclTemplateUpdateArgs,
+        AclTemplateUpdateResult,
         roles=['FILESYSTEM_ATTRS_WRITE']
     )
     async def do_update(self, id_, data):
@@ -133,7 +117,11 @@ class ACLTemplateService(CRUDService):
         )
         return await self.get_instance(id_)
 
-    @accepts(Int('id'))
+    @api_method(
+        AclTemplateDeleteArgs,
+        AclTemplateDeleteResult,
+        roles=['FILESYSTEM_ATTRS_WRITE']
+    )
     async def do_delete(self, id_):
         entry = await self.get_instance(id_)
         if entry['builtin']:
@@ -263,22 +251,11 @@ class ACLTemplateService(CRUDService):
 
         return
 
-    @accepts(Dict(
-        "acltemplate_by_path",
-        Str("path", default=""),
-        Ref('query-filters'),
-        Ref('query-options'),
-        Dict(
-            "format-options",
-            Bool("canonicalize", default=False),
-            Bool("ensure_builtins", default=False),
-            Bool("resolve_names", default=False),
-        ),
-    ), roles=['FILESYSTEM_ATTRS_READ'])
-    @returns(List(
-        'templates',
-        items=[Ref('acltemplate_entry')]
-    ))
+    @api_method(
+        AclTemplateByPathArgs,
+        AclTemplateByPathResult,
+        roles=['FILESYSTEM_ATTRS_READ']
+    )
     async def by_path(self, data):
         """
         Retrieve list of available ACL templates for a given `path`.
@@ -325,8 +302,8 @@ class ACLTemplateService(CRUDService):
                 st = await self.middleware.run_in_thread(os.stat, data['path'])
                 await self.resolve_names(st.st_uid, st.st_gid, t)
 
-            if data['format-options']['canonicalize'] and t['acltype'] == ACLType.NFS4.name:
-                canonicalized = ACLType[t['acltype']].canonicalize(t['acl'])
+            if data['format-options']['canonicalize'] and t['acltype'] == FS_ACL_Type.NFS4:
+                canonicalized = canonicalize_acl_nfs4(t['acl'])
                 t['acl'] = canonicalized
 
         return templates
