@@ -32,6 +32,9 @@ def get_user_details(id_type: str, xid: int) -> dict:
     if id_type not in ['USER', 'GROUP']:
         raise CallError(f'{id_type}: invalid ID type. Must be "USER" or "GROUP"')
 
+    if not isinstance(xid, int):
+        raise TypeError(f'{type(xid)}: xid must be int.')
+
     if id_type == 'USER':
         try:
             u = pwd.getpwuid(xid)
@@ -76,6 +79,12 @@ def check_acl_execute_impl(path: str, acl: list, uid: int, gid: int, path_must_e
     WARNING: The only way this method should be called is within context of `run_with_user_context`
     """
     parts = pathlib.Path(path).parts
+
+    if not isinstance(uid, int):
+        raise TypeError(f'{type(uid)}: uid is not int')
+
+    if not isinstance(gid, int):
+        raise TypeError(f'{type(gid)}: gid is not int')
 
     for entry in acl:
         if entry['tag'] in ('everyone@', 'OTHER', 'MASK'):

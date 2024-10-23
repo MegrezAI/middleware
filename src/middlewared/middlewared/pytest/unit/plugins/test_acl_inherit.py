@@ -1,7 +1,7 @@
 import pytest
 
 from copy import deepcopy
-from middlewared.plugins.filesystem_.utils import ACLType
+from middlewared.plugins.filesystem_.utils import calculate_inherited_acl
 
 
 NFS4_ACL = {'acl': [
@@ -87,8 +87,8 @@ NFS4_ACL = {'acl': [
 
 
 def test__nfs4_acl_inheritance():
-    dir_inherited = ACLType.NFS4.calculate_inherited(deepcopy(NFS4_ACL), True)
-    file_inherited = ACLType.NFS4.calculate_inherited(deepcopy(NFS4_ACL), False)
+    dir_inherited = calculate_inherited_acl(deepcopy(NFS4_ACL), True)
+    file_inherited = calculate_inherited_acl(deepcopy(NFS4_ACL), False)
 
     for entry in dir_inherited:
         match entry['id']:
