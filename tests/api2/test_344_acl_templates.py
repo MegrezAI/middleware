@@ -2,8 +2,7 @@
 
 import os
 import pytest
-from contextlib import contextmanager
-from middlewared.test.integration.utils import call, ssh
+from middlewared.test.integration.utils import call
 from middlewared.test.integration.assets.pool import dataset as make_dataset
 
 
@@ -48,12 +47,12 @@ def create_entry_type(acltype):
 @pytest.fixture(scope='function')
 def tmp_posix_entry():
     yield create_entry_type('POSIX')
- 
+
 
 @pytest.fixture(scope='function')
 def tmp_nfs_entry():
     yield create_entry_type('NFSV4')
- 
+
 
 @pytest.fixture(scope='function')
 def tmp_acltemplates(tmp_posix_entry, tmp_nfs_entry):
@@ -74,8 +73,8 @@ def test_check_builtin_types_by_path(acltemplate_ds, acltype):
     expected_acltype = 'POSIX1E' if acltype == 'POSIX' else 'NFS4'
     payload = {'path': dataset_path(acltemplate_ds, acltype)}
     for entry in call('filesystem.acltemplate.by_path', payload):
-        assert entry['builtin'], results.text
-        assert entry['acltype'] == expected_acltype, results.text
+        assert entry['builtin'], str(entry) 
+        assert entry['acltype'] == expected_acltype, str(entry) 
 
     payload['format-options'] = {'resolve_names': True, 'ensure_builtins': True}
     for entry in call('filesystem.acltemplate.by_path', payload):
@@ -83,7 +82,7 @@ def test_check_builtin_types_by_path(acltemplate_ds, acltype):
             if ace['tag'] not in ('USER_OBJ', 'GROUP_OBJ', 'USER', 'GROUP'):
                 continue
 
-            assert ace.get('who') is not None, results.text
+            assert ace.get('who') is not None, str(ace) 
 
 
 @pytest.mark.parametrize('acltype', ['NFS4', 'POSIX'])
@@ -107,7 +106,7 @@ def test_knownfail_builtin_delete(request):
     builtin_templ = call('filesystem.acltemplate.query', [['builtin', '=', True]], {'get': True})
 
     with pytest.raises(Exception):
-        call('filesystem.acltemplate.delete', builtlin_templ['id'])
+        call('filesystem.acltemplate.delete', builtin_templ['id'])
 
 
 def test_knownfail_builtin_update(request):
@@ -118,4 +117,4 @@ def test_knownfail_builtin_update(request):
     payload['name'] = 'CANARY'
 
     with pytest.raises(Exception):
-        call('filesystem.acltemplate.update', templ_id, payload)
+        call('filesystem.acltemplate.update', tmpl_id, payload)
