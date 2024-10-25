@@ -107,7 +107,7 @@ def test_knownfail_builtin_delete(request):
     builtin_templ = call('filesystem.acltemplate.query', [['builtin', '=', True]], {'get': True})
 
     with pytest.raises(Exception):
-        call('filesystem.acltemplate.delete' builtlin_templ['id'])
+        call('filesystem.acltemplate.delete', builtlin_templ['id'])
 
 
 def test_knownfail_builtin_update(request):
