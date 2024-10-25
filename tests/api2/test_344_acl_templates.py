@@ -73,8 +73,8 @@ def test_check_builtin_types_by_path(acltemplate_ds, acltype):
     expected_acltype = 'POSIX1E' if acltype == 'POSIX' else 'NFS4'
     payload = {'path': dataset_path(acltemplate_ds, acltype)}
     for entry in call('filesystem.acltemplate.by_path', payload):
-        assert entry['builtin'], str(entry) 
-        assert entry['acltype'] == expected_acltype, str(entry) 
+        assert entry['builtin'], str(entry)
+        assert entry['acltype'] == expected_acltype, str(entry)
 
     payload['format-options'] = {'resolve_names': True, 'ensure_builtins': True}
     for entry in call('filesystem.acltemplate.by_path', payload):
@@ -82,7 +82,7 @@ def test_check_builtin_types_by_path(acltemplate_ds, acltype):
             if ace['tag'] not in ('USER_OBJ', 'GROUP_OBJ', 'USER', 'GROUP'):
                 continue
 
-            assert ace.get('who') is not None, str(ace) 
+            assert ace.get('who') is not None, str(ace)
 
 
 @pytest.mark.parametrize('acltype', ['NFS4', 'POSIX'])
