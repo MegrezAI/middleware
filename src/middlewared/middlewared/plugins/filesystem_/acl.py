@@ -16,6 +16,8 @@ from middlewared.service import accepts, private, returns, job, ValidationErrors
 from middlewared.service_exception import CallError, MatchNotFound, ValidationError
 from middlewared.utils.filesystem.acl import (
     FS_ACL_Type,
+    NFS4ACE_Tag,
+    POSIXACE_Tag,
     gen_aclstring_posix1e,
     path_get_acltype,
     validate_nfs4_ace_full,
@@ -734,7 +736,7 @@ class FilesystemService(Service):
             if entry.get('who') in (None, ''):
                 continue
 
-            if entry.get('id') in (None, -1):
+            if entry.get('id') not in (None, -1):
                 continue
 
             # We're using user.query and group.query to intialize cache entries if required
@@ -747,6 +749,10 @@ class FilesystemService(Service):
                     method = 'group.query'
                     filters = [['group', '=', entry['who']]]
                     key = 'gid'
+                case POSIXACE_Tag.USER_OBJ | POSIXACE_Tag.GROUP_OBJ | POSIXACE_Tag.OTHER | POSIXACE_Tag.MASK:
+                    continue
+                case NFS4ACE_Tag.SPECIAL_OWNER | NFS4ACE_Tag.SPECIAL_GROUP | NFS4ACE_Tag.EVERYONE:
+                    continue
                 case _:
                     raise ValidationError(
                         f'filesystem.setacl.{idx}.who',
