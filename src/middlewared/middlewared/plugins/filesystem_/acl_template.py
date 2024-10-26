@@ -145,7 +145,7 @@ class ACLTemplateService(CRUDService):
         if (bu_id != -1 and has_bu) or (ba_id != -1 and has_ba):
             return
 
-        if data['acltype'] == ACLType.NFS4.name:
+        if data['acltype'] == FS_ACL_Type.NFS4:
             if bu_id != -1:
                 data['acl'].append(
                     {"tag": "GROUP", "id": bu_id, "perms": {"BASIC": "MODIFY"}, "flags": {"BASIC": "INHERIT"}, "type": "ALLOW"},
@@ -275,10 +275,10 @@ class ACLTemplateService(CRUDService):
             acltype = await self.middleware.call(
                 'filesystem.path_get_acltype', data['path']
             )
-            if acltype == ACLType.DISABLED.name:
+            if acltype == FS_ACL_Type.DISABLED:
                 return []
 
-            if acltype == ACLType.POSIX1E.name and data['format-options']['canonicalize']:
+            if acltype == FS_ACL_Type.POSIX1E and data['format-options']['canonicalize']:
                 verrors.add(
                     "filesystem.acltemplate_by_path.format-options.canonicalize",
                     "POSIX1E ACLs may not be sorted into Windows canonical order."
