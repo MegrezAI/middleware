@@ -303,7 +303,7 @@ class ACLTemplateService(CRUDService):
                 await self.resolve_names(st.st_uid, st.st_gid, t)
 
             if data['format-options']['canonicalize'] and t['acltype'] == FS_ACL_Type.NFS4:
-                canonicalized = canonicalize_nfs4_acl['acl'])
+                canonicalized = canonicalize_nfs4_acl(t['acl'])
                 t['acl'] = canonicalized
 
         return templates
