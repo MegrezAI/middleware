@@ -7,12 +7,16 @@ import typing
 from pydantic import BaseModel as PydanticBaseModel, ConfigDict, create_model, Field, model_serializer, Secret
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.main import IncEx
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Type
 
+from middlewared.api.base.excluded import Excluded, excluded_field
 from middlewared.api.base.types.base import SECRET_VALUE
 from middlewared.utils.lang import undefined
 
-__all__ = ["AllowExtraBaseModel", "BaseModel", "ForUpdateMetaclass", "single_argument_args", "single_argument_result"]
+__all__ = [
+    "AllowExtraBaseModel", "BaseModel", "create_model_excluding_fields", "ForUpdateMetaclass",
+    "single_argument_args", "single_argument_result",
+]
 
 
 class BaseModel(PydanticBaseModel):
@@ -195,3 +199,26 @@ def single_argument_result(klass, klass_name=None):
         model.from_previous = classmethod(klass.from_previous)
         model.to_previous = classmethod(klass.to_previous)
     return model
+
+
+def create_model_excluding_fields(
+    base_class: Type[BaseModel], fields_to_exclude: list[str], model_name: str, create_model_kwargs: dict = None,
+) -> Type[BaseModel]:
+    """
+    Can be used to create a new model inheriting from `base_class` with excluding fields specified
+    in `fields_to_exclude`.
+    """
+    # Prepare fields, excluding specified fields and setting them to Excluded
+    model_fields = {
+        field: (Excluded, excluded_field())
+        if field in fields_to_exclude else (field_type, ...)
+        for field, field_type in base_class.__annotations__.items()
+    }
+
+    return create_model(
+        model_name,
+        __base__=base_class,
+        __module__=base_class.__module__,
+        **(create_model_kwargs or {}),
+        **model_fields
+    )
