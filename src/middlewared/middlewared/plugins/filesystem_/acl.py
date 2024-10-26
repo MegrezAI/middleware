@@ -1000,4 +1000,4 @@ class FilesystemService(Service):
         current_acl = self.getacl(data['path'], False)
         acltype = FS_ACL_Type(current_acl['acltype'])
 
-        return calculate_inherited_acl(acltype, current_acl, data['options']['directory'])
+        return calculate_inherited_acl(current_acl, data['options']['directory'])

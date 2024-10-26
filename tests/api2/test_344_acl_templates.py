@@ -85,7 +85,7 @@ def test_check_builtin_types_by_path(acltemplate_ds, acltype):
             assert ace.get('who') is not None, str(ace)
 
 
-@pytest.mark.parametrize('acltype', ['NFS4', 'POSIX'])
+@pytest.mark.parametrize('acltype', ['NFSV4', 'POSIX'])
 def test_update_new_template(tmp_acltemplates, acltype):
     """
     Rename the template we created to validated that `update`
