@@ -23,10 +23,6 @@ def canonicalize_nfs4_acl(theacl):
     See http://docs.microsoft.com/en-us/windows/desktop/secauthz/order-of-aces-in-a-dacl
     Logic is simplified here because we do not determine depth from which ACLs are inherited.
     """
-    acltype = FS_ACL_Type(theacl['acltype'])
-    if acltype != FS_ACL_Type.NFS4:
-        raise ValueError(f'{acltype}: ACL canonicalization not supported for ACL type')
-
     out = []
     acl_groups = {
         "deny_noinherit": [],
