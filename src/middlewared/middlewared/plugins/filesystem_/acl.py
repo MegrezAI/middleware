@@ -758,7 +758,7 @@ class FilesystemService(Service):
                 raise ValidationError(f'filesystem.setacl.{idx}.who', f'{entry["who"]}: account does not exist')
 
         match current_acl['acltype']:
-            case FS_ACL_Type.NFS:
+            case FS_ACL_Type.NFS4:
                 self.setacl_nfs4(job, current_acl, data)
             case FS_ACL_Type.POSIX1E:
                 self.setacl_posix1e(job, current_acl, data)
