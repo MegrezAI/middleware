@@ -506,7 +506,7 @@ class FilesystemService(Service):
             job.set_progress(100, 'Finished setting NFSv4 ACL.')
             return
 
-        acltool(data['path'], 'clone' if not do_strip else 'strip', data['uid'], data['gid'], options)
+        acltool(data['path'], 'clone' if not do_strip else 'strip', data['uid'], data['gid'], data['options'])
 
         job.set_progress(100, 'Finished setting NFSv4 ACL.')
 
@@ -950,6 +950,4 @@ class FilesystemService(Service):
         verrors.check()
 
         current_acl = self.getacl(data['path'], False)
-        acltype = FS_ACL_Type(current_acl['acltype'])
-
         return calculate_inherited_acl(current_acl, data['options']['directory'])
