@@ -153,13 +153,13 @@ def validate_nfs4_ace_full(ace_in: dict, schema_prefix: str, verrors: Validation
     if ace_in['tag'] in NFS4_SPECIAL_ENTRIES:
         if ace_in['type'] == NFS4ACE_Type.DENY:
             tag = ace_in['tag']
-            verrors.append(
+            verrors.add(
                 f'{schema_prefix}.tag',
                 f'{tag}: DENY entries for specified tag are not permitted.'
             )
     else:
-        if ace_in.get('id') is not None and ace_in.get('who'):
-            verrors.append(
+        if ace_in.get('id') is not in (None, -1) and ace_in.get('who'):
+            verrors.add(
                 f'{schema_prefix}.who',
                 'Numeric ID "id" and account name "who" may not be specified simultaneously'
             )
