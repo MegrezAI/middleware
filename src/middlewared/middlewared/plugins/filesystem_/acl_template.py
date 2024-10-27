@@ -11,7 +11,7 @@ from middlewared.service import private
 from middlewared.plugins.smb import SMBBuiltin
 from middlewared.utils.directoryservices.constants import DSStatus, DSType
 from middlewared.utils.filesystem.acl import FS_ACL_Type, gen_aclstring_posix1e
-from .utils import canonicalize_nfs4_acl
+from .utils import canonicalize_nfs4_acl, gen_aclstring_posix1e
 
 import middlewared.sqlalchemy as sa
 import errno
