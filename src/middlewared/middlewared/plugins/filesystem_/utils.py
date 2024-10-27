@@ -1,8 +1,42 @@
+import enum
+import os
+
+from middlewared.service_exception import CallError
 from middlewared.utils.filesystem.acl import (
+    ACL_XATTRS,
     FS_ACL_Type,
     NFS4ACE_Flag,
     NFS4ACE_FlagSimple,
 )
+
+
+class AclToolAction(enum.StrEnum):
+    CHOWN = 'chown'  # Only chown files
+    CLONE = 'clone'  # Use simplified imheritance logic
+    INHERIT = 'inherit'  # NFS41-style inheritance
+    STRIP = 'strip' # Strip ACL from specified path
+    RESTORE = 'restore'  # restore ACL from snapshot
+
+
+def acltool(path: str, action: AclToolAction, uid: int, gid: int, options: dict) -> None:
+    """
+    This is an internal-only tool that performs certain ACL-related operations on the specified path.
+    """
+    flags = "-r"
+    flags += "x" if options.get('traverse') else ""
+    flags += "C" if options.get('do_chmod') else ""
+    flags += "P" if options.get('posixacl') else ""
+
+    acltool = subprocess.run([
+        '/usr/bin/nfs4xdr_winacl',
+        '-a', action,
+        '-O', str(uid), '-G', str(gid),
+        flags,
+        '-c', path,
+        '-p', path], check=False, capture_output=True
+    )
+    if acltool.returncode != 0:
+        raise CallError(f"acltool [{action}] on path {path} failed with error: [{acltool.stderr.decode().strip()}]")
 
 
 def __ace_is_inherited_nfs4(ace):

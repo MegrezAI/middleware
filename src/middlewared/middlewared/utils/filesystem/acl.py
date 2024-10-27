@@ -4,6 +4,8 @@ import os
 
 from middlewared.service_exception import ValidationErrors
 
+ACL_UNDEFINED_ID = -1
+
 
 class ACLXattr(enum.StrEnum):
     POSIX_ACCESS = "system.posix_acl_access"
@@ -11,10 +13,10 @@ class ACLXattr(enum.StrEnum):
     ZFS_NATIVE = "system.nfs4_acl_xdr"
 
 
-ACL_XATTRS = set([xat.value for xat in ACLXattr])
+ACL_XATTRS = frozenset([xat.value for xat in ACLXattr])
 
 # ACCESS_ACL_XATTRS is set of ACLs that control access to the file itself.
-ACCESS_ACL_XATTRS = set([ACLXattr.POSIX_ACCESS.value, ACLXattr.ZFS_NATIVE.value])
+ACCESS_ACL_XATTRS = frozenset([ACLXattr.POSIX_ACCESS.value, ACLXattr.ZFS_NATIVE.value])
 
 
 def acl_is_present(xat_list: list) -> bool:
@@ -158,7 +160,10 @@ def validate_nfs4_ace_full(ace_in: dict, schema_prefix: str, verrors: Validation
                 f'{tag}: DENY entries for specified tag are not permitted.'
             )
     else:
-        if ace_in.get('id') is not in (None, -1) and ace_in.get('who'):
+        ace_id = ace_in.get('id')
+        ace_who = ace_in.get('who')
+
+        if ace_id != ACL_UNDEFINED_ID and ace_in.get('who'):
             verrors.add(
                 f'{schema_prefix}.who',
                 'Numeric ID "id" and account name "who" may not be specified simultaneously'
@@ -287,3 +292,19 @@ def gen_aclstring_posix1e(dacl: list, recursive: bool, verrors: ValidationErrors
             )
 
     return aclstring
+
+
+def normalize_acl_ids(setacl_data: dict) -> None:
+    for key in ('uid', 'gid'):
+        if setacl_data[key] is None:
+            setacl_data[key] = ACL_UNDEFINED_ID
+
+    for ace in setacl_data['dacl']:
+        if ace['id'] is None:
+            ace['id'] = ACL_UNDEFINED_ID
+
+
+def strip_acl_path(path: str) -> None:
+    for xat in os.listxattr(path):
+        if xat in ACL_XATTRS:
+            os.removexattr(path, xat)

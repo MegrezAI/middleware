@@ -15,41 +15,26 @@ from middlewared.schema import Bool, Dict, Int, Str, UnixPerm
 from middlewared.service import accepts, private, returns, job, ValidationErrors, Service
 from middlewared.service_exception import CallError, MatchNotFound, ValidationError
 from middlewared.utils.filesystem.acl import (
+    ACL_UNDEFINED_ID,
     FS_ACL_Type,
     NFS4ACE_Tag,
     POSIXACE_Tag,
     gen_aclstring_posix1e,
+    normalize_acl_ids,
     path_get_acltype,
+    strip_acl_path,
     validate_nfs4_ace_full,
 )
 from middlewared.utils.filesystem.directory import directory_is_empty
 from middlewared.utils.path import FSLocation, path_location
 from middlewared.validators import Range
-from .utils import calculate_inherited_acl, canonicalize_nfs4_acl
+from .utils import acltool, calculate_inherited_acl, canonicalize_nfs4_acl
 
 
 class FilesystemService(Service):
 
     class Config:
         cli_private = True
-
-    def __acltool(self, path, action, uid, gid, options):
-
-        flags = "-r"
-        flags += "x" if options.get('traverse') else ""
-        flags += "C" if options.get('do_chmod') else ""
-        flags += "P" if options.get('posixacl') else ""
-
-        acltool = subprocess.run([
-            '/usr/bin/nfs4xdr_winacl',
-            '-a', action,
-            '-O', str(uid), '-G', str(gid),
-            flags,
-            '-c', path,
-            '-p', path], check=False, capture_output=True
-        )
-        if acltool.returncode != 0:
-            raise CallError(f"acltool [{action}] on path {path} failed with error: [{acltool.stderr.decode().strip()}]")
 
     def _common_perm_path_validate(self, schema, data, verrors, pool_mp_ok=False):
         loc = path_location(data['path'])
@@ -169,29 +154,8 @@ class FilesystemService(Service):
 
         job.set_progress(10, f'Recursively changing owner of {data["path"]}.')
         options['posixacl'] = True
-        self.__acltool(data['path'], 'chown', uid, gid, options)
+        acltool(data['path'], 'chown', uid, gid, options)
         job.set_progress(100, 'Finished changing owner.')
-
-    @private
-    def _strip_acl_nfs4(self, path):
-        stripacl = subprocess.run(
-            ['nfs4xdr_setfacl', '-b', path],
-            capture_output=True,
-            check=False
-        )
-        if stripacl.returncode != 0:
-            raise CallError(f"{path}: Failed to strip ACL on path: {stripacl.stderr.decode()}")
-
-        return
-
-    @private
-    def _strip_acl_posix1e(self, path):
-        posix_xattrs = ['system.posix_acl_access', 'system.posix_acl_default']
-        for xat in os.listxattr(path):
-            if xat not in posix_xattrs:
-                continue
-
-            os.removexattr(path, xat)
 
     @accepts(
         Dict(
@@ -269,10 +233,7 @@ class FilesystemService(Service):
         if mode is not None:
             mode = int(mode, 8)
 
-        if is_nfs4acl:
-            self._strip_acl_nfs4(data['path'])
-        else:
-            self._strip_acl_posix1e(data['path'])
+        strip_acl_path(data['path'])
 
         if mode:
             os.chmod(data['path'], mode)
@@ -287,7 +248,7 @@ class FilesystemService(Service):
         job.set_progress(10, f'Recursively setting permissions on {data["path"]}.')
         options['posixacl'] = not is_nfs4acl
         options['do_chmod'] = True
-        self.__acltool(data['path'], action, uid, gid, options)
+        acltool(data['path'], action, uid, gid, options)
         job.set_progress(100, 'Finished setting permissions.')
 
     @private
@@ -514,14 +475,10 @@ class FilesystemService(Service):
     @private
     def setacl_nfs4(self, job, current_acl, data):
         job.set_progress(0, 'Preparing to set acl.')
-        options = data.get('options', {})
-        recursive = options.get('recursive', False)
-        do_strip = options.get('stripacl', False)
-        do_canon = options.get('canonicalize', False)
+        recursive = data['options'].get('recursive', False)
+        do_strip = data['options'].get('stripacl', False)
+        do_canon = data['options'].get('canonicalize', False)
 
-        path = data.get('path', '')
-        uid = -1 if data['uid'] is None else data.get('uid', -1)
-        gid = -1 if data['gid'] is None else data.get('gid', -1)
         verrors = ValidationErrors()
 
         for idx, ace in enumerate(data['dacl']):
@@ -530,27 +487,27 @@ class FilesystemService(Service):
         verrors.check()
 
         if do_strip:
-            self._strip_acl_nfs4(path)
+            strip_acl_path(data['path'])
 
         else:
             if options['validate_effective_acl']:
-                uid_to_check = current_acl['uid'] if uid == -1 else uid
-                gid_to_check = current_acl['gid'] if gid == -1 else gid
+                uid_to_check = current_acl['uid'] if data['uid'] == ACL_UNDEFINED_ID else data['uid']
+                gid_to_check = current_acl['gid'] if data['gid' == ACL_UNDEFINED_ID else data['gid']
 
                 self.middleware.call_sync(
                     'filesystem.check_acl_execute',
-                    path, data['dacl'], uid_to_check, gid_to_check, True
+                    data['path'], data['dacl'], uid_to_check, gid_to_check, True
                 )
 
-            self.setacl_nfs4_internal(path, data['dacl'], do_canon, verrors)
+            self.setacl_nfs4_internal(data['path'], data['dacl'], do_canon, verrors)
 
         if not recursive:
-            os.chown(path, uid, gid)
+            os.chown(data['path'], data['uid'], data['gid'])
             job.set_progress(100, 'Finished setting NFSv4 ACL.')
             return
 
-        self.__acltool(path, 'clone' if not do_strip else 'strip',
-                       uid, gid, options)
+        acltool(data['path'], 'clone' if not do_strip else 'strip',
+                data['uid'], data['gid'], options)
 
         job.set_progress(100, 'Finished setting NFSv4 ACL.')
 
@@ -561,9 +518,6 @@ class FilesystemService(Service):
         recursive = options.get('recursive', False)
         do_strip = options.get('stripacl', False)
         dacl = data.get('dacl', [])
-        path = data['path']
-        uid = -1 if data['uid'] is None else data.get('uid', -1)
-        gid = -1 if data['gid'] is None else data.get('gid', -1)
         verrors = ValidationErrors()
 
         if do_strip and dacl:
@@ -576,12 +530,12 @@ class FilesystemService(Service):
             if options['validate_effective_acl']:
                 try:
                     # check execute on parent paths
-                    uid_to_check = current_acl['uid'] if uid == -1 else uid
-                    gid_to_check = current_acl['gid'] if gid == -1 else gid
+                    uid_to_check = current_acl['uid'] if data['uid'] == ACL_UNDEFINED_ID else data['uid']
+                    gid_to_check = current_acl['gid'] if data['gid' == ACL_UNDEFINED_ID else data['gid']
 
                     self.middleware.call_sync(
                         'filesystem.check_acl_execute',
-                        path, dacl, uid_to_check, gid_to_check, True
+                        data['path'], dacl, uid_to_check, gid_to_check, True
                     )
                 except CallError as e:
                     if e.errno != errno.EPERM:
@@ -596,26 +550,24 @@ class FilesystemService(Service):
 
         verrors.check()
 
-        self._strip_acl_posix1e(path)
+        strip_acl_path(data['path'])
 
         job.set_progress(50, 'Setting POSIX1e ACL.')
 
         if not do_strip:
-            setacl = subprocess.run(['setfacl', '-m', aclstring, path],
+            setacl = subprocess.run(['setfacl', '-m', aclstring, data['path']],
                                     check=False, capture_output=True)
             if setacl.returncode != 0:
-                raise CallError(f'Failed to set ACL [{aclstring}] on path [{path}]: '
+                raise CallError(f'Failed to set ACL [{aclstring}] on path [{data["path"]}]: '
                                 f'{setacl.stderr.decode()}')
 
         if not recursive:
-            os.chown(path, uid, gid)
+            os.chown(data['path'], data['uid'], data['gid'])
             job.set_progress(100, 'Finished setting POSIX1e ACL.')
             return
 
         options['posixacl'] = True
-        self.__acltool(data['path'],
-                       'clone' if not do_strip else 'strip',
-                       uid, gid, options)
+        acltool(data['path'], 'clone' if not do_strip else 'strip', data['uid'], data['gid'], options)
 
         job.set_progress(100, 'Finished setting POSIX1e ACL.')
 
@@ -693,13 +645,14 @@ class FilesystemService(Service):
         """
         verrors = ValidationErrors()
         data['loc'] = self._common_perm_path_validate("filesystem.setacl", data, verrors)
-        if data['uid'] not in (None, -1) and data['user']:
+        normalize_acl_ids(data)
+        if data['uid'] != ACL_UNDEFINED_ID and data['user']:
             verrors.add(
                 'filesystem.setacl.user',
                 'User and uid may not be specified simulaneously.'
             )
 
-        if data['gid'] not in (None, -1) and data['group']:
+        if data['gid'] != ACL_UNDEFINED_ID and data['group']:
             verrors.add(
                 'filesystem.setacl.group',
                 'group and gid may not be specified simulaneously.'
@@ -736,7 +689,7 @@ class FilesystemService(Service):
             if entry.get('who') in (None, ''):
                 continue
 
-            if entry.get('id') not in (None, -1):
+            if entry.get('id') != ACL_UNDEFINED_ID:
                 continue
 
             # We're using user.query and group.query to intialize cache entries if required

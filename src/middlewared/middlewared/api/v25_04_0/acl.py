@@ -12,6 +12,7 @@ from middlewared.api.base import (
 from pydantic import Field, model_validator
 from typing import Annotated, Literal, Self
 from middlewared.utils.filesystem.acl import (
+    ACL_UNDEFINED_ID,
     FS_ACL_Type,
     NFS4ACE_Tag,
     NFS4ACE_Type,
@@ -35,7 +36,6 @@ __all__ = [
     'FilesystemGetInheritedAclArgs', 'FilesystemGetInheritedAclResult'
 ]
 
-ACL_UNDEFINED_ID = -1
 ACL_MAX_ID = 2 ** 32 // 2 - 1
 
 AceWhoId = Annotated[int, Ge(ACL_UNDEFINED_ID), Le(ACL_MAX_ID)]
