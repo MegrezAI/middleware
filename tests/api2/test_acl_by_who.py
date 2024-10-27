@@ -78,7 +78,7 @@ def test__nfsv4_by_who(nfsv4_acl_dataset):
 
 
 def test__acl_validation_errors_posix(posix_acl_dataset):
-    target = os.path.join('/mnt', ds)
+    target = os.path.join('/mnt', posix_acl_dataset)
     the_acl = call('filesystem.getacl', target)['acl']
 
     new_acl = deepcopy(the_acl)
