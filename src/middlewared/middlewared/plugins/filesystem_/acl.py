@@ -492,7 +492,7 @@ class FilesystemService(Service):
         else:
             if options['validate_effective_acl']:
                 uid_to_check = current_acl['uid'] if data['uid'] == ACL_UNDEFINED_ID else data['uid']
-                gid_to_check = current_acl['gid'] if data['gid' == ACL_UNDEFINED_ID else data['gid']
+                gid_to_check = current_acl['gid'] if data['gid'] == ACL_UNDEFINED_ID else data['gid']
 
                 self.middleware.call_sync(
                     'filesystem.check_acl_execute',
@@ -531,7 +531,7 @@ class FilesystemService(Service):
                 try:
                     # check execute on parent paths
                     uid_to_check = current_acl['uid'] if data['uid'] == ACL_UNDEFINED_ID else data['uid']
-                    gid_to_check = current_acl['gid'] if data['gid' == ACL_UNDEFINED_ID else data['gid']
+                    gid_to_check = current_acl['gid'] if data['gid'] == ACL_UNDEFINED_ID else data['gid']
 
                     self.middleware.call_sync(
                         'filesystem.check_acl_execute',
