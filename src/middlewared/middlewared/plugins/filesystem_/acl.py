@@ -19,7 +19,6 @@ from middlewared.utils.filesystem.acl import (
     FS_ACL_Type,
     NFS4ACE_Tag,
     POSIXACE_Tag,
-    gen_aclstring_posix1e,
     normalize_acl_ids,
     path_get_acltype,
     strip_acl_path,
@@ -28,7 +27,7 @@ from middlewared.utils.filesystem.acl import (
 from middlewared.utils.filesystem.directory import directory_is_empty
 from middlewared.utils.path import FSLocation, path_location
 from middlewared.validators import Range
-from .utils import acltool, calculate_inherited_acl, canonicalize_nfs4_acl
+from .utils import acltool, calculate_inherited_acl, canonicalize_nfs4_acl, gen_aclstring_posix1e
 
 
 class FilesystemService(Service):
