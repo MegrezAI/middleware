@@ -490,7 +490,7 @@ class FilesystemService(Service):
             strip_acl_path(data['path'])
 
         else:
-            if options['validate_effective_acl']:
+            if data['options']['validate_effective_acl']:
                 uid_to_check = current_acl['uid'] if data['uid'] == ACL_UNDEFINED_ID else data['uid']
                 gid_to_check = current_acl['gid'] if data['gid'] == ACL_UNDEFINED_ID else data['gid']
 
@@ -506,8 +506,7 @@ class FilesystemService(Service):
             job.set_progress(100, 'Finished setting NFSv4 ACL.')
             return
 
-        acltool(data['path'], 'clone' if not do_strip else 'strip',
-                data['uid'], data['gid'], options)
+        acltool(data['path'], 'clone' if not do_strip else 'strip', data['uid'], data['gid'], options)
 
         job.set_progress(100, 'Finished setting NFSv4 ACL.')
 
