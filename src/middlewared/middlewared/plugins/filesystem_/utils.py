@@ -1,9 +1,8 @@
 import enum
-import os
+import subprocess
 
 from middlewared.service_exception import CallError, ValidationErrors
 from middlewared.utils.filesystem.acl import (
-    ACL_XATTRS,
     FS_ACL_Type,
     NFS4ACE_Flag,
     NFS4ACE_FlagSimple,
@@ -14,7 +13,7 @@ class AclToolAction(enum.StrEnum):
     CHOWN = 'chown'  # Only chown files
     CLONE = 'clone'  # Use simplified imheritance logic
     INHERIT = 'inherit'  # NFS41-style inheritance
-    STRIP = 'strip' # Strip ACL from specified path
+    STRIP = 'strip'  # Strip ACL from specified path
     RESTORE = 'restore'  # restore ACL from snapshot
 
 
