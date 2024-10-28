@@ -55,7 +55,7 @@ def tmp_posix_entry():
 
 @pytest.fixture(scope='function')
 def tmp_nfs_entry():
-    with create_entry_type('NFSV4') as entry:
+    with create_entry_type('NFS4') as entry:
         yield entry
 
 
