@@ -3,6 +3,7 @@ import subprocess
 
 from middlewared.service_exception import CallError, ValidationErrors
 from middlewared.utils.filesystem.acl import (
+    ACL_UNDEFINED_ID,
     FS_ACL_Type,
     NFS4ACE_Flag,
     NFS4ACE_FlagSimple,
@@ -184,7 +185,13 @@ def gen_aclstring_posix1e(dacl: list, recursive: bool, verrors: ValidationErrors
         if idx != 0:
             aclstring += ","
 
-        if ace['id'] == -1:
+        if ace['who'] and ace['id'] not in (None, ACL_UNDEFINED_ID):
+            verrors.add(
+                'filesystem_acl.dacl.{idx}.who',
+                 f'Numeric ID {ace["id"]} and account name {ace["who"]} may not be specified simultaneously'
+            )
+
+        if ace['id'] == ACL_UNDEFINED_ID:
             ace['id'] = ''
 
         who = "DEF_" if ace['default'] else ""

@@ -166,7 +166,7 @@ def validate_nfs4_ace_full(ace_in: dict, schema_prefix: str, verrors: Validation
         if ace_id != ACL_UNDEFINED_ID and ace_who:
             verrors.add(
                 f'{schema_prefix}.who',
-                'Numeric ID "id" and account name "who" may not be specified simultaneously'
+                f'Numeric ID {ace_id} and account name {ace_who} may not be specified simultaneously'
             )
 
 
