@@ -711,6 +711,7 @@ class FilesystemService(Service):
                     )
             try:
                 entry['id'] = self.middleware.call_sync(method, filters, {'get': True})[key]
+                entry['who'] = None
             except MatchNotFound:
                 raise ValidationError(f'filesystem.setacl.{idx}.who', f'{entry["who"]}: account does not exist')
 
