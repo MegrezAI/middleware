@@ -39,7 +39,6 @@ def create_entry_type(acltype):
     template = call('filesystem.acltemplate.create', payload)
 
     try:
-        template = call('filesystem.acltemplate.create', payload)
         yield template
     finally:
         call('filesystem.acltemplate.delete', template['id'])
