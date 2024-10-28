@@ -41,7 +41,9 @@ class ACLTemplateService(CRUDService):
         role_prefix='FILESYSTEM_ATTRS'
 
     @private
-    async def validate_acl(self, data, schema, verrors):
+    async def validate_acl(self, data, schema, verrors, template_id):
+        await self._ensure_unique(verrors, schema, 'name', data['name'], template_id)
+
         acltype = FS_ACL_Type(data['acltype'])
         if acltype is FS_ACL_Type.POSIX1E:
             gen_aclstring_posix1e(copy.deepcopy(data['acl']), False, verrors)
@@ -65,7 +67,7 @@ class ACLTemplateService(CRUDService):
                 "filesystem_acltemplate_create.acl",
                 "At least one ACL entry must be specified."
             )
-        await self.validate_acl(data, "filesystem_acltemplate_create.acl", verrors)
+        await self.validate_acl(data, "filesystem_acltemplate_create.acl", verrors, None)
         verrors.check()
         data['builtin'] = False
 
@@ -105,7 +107,7 @@ class ACLTemplateService(CRUDService):
                 "filesystem_acltemplate_update.acl",
                 "At least one ACL entry must be specified."
             )
-        await self.validate_acl(new, "filesystem_acltemplate_update.acl", verrors)
+        await self.validate_acl(new, "filesystem_acltemplate_update.acl", verrors, id_)
         verrors.check()
 
         await self.middleware.call(
