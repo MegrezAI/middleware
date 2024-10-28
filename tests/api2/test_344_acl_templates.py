@@ -33,7 +33,7 @@ def create_entry_type(acltype):
     payload = {
         'name': f'{acltype}_TEST',
         'acl': acl,
-        'acltype': acl['acltype']
+        'acltype': entry['acltype']
     }
 
     try:
