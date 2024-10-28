@@ -2,6 +2,7 @@
 
 import os
 import pytest
+from contextlib import contextmanager
 from middlewared.test.integration.utils import call
 from middlewared.test.integration.assets.pool import dataset as make_dataset
 
@@ -24,6 +25,7 @@ def acltemplate_ds():
             yield {'POSIX': posix_ds, 'NFSV4': nfsv4_ds}
 
 
+@contextmanager
 def create_entry_type(acltype):
     entry = call('filesystem.acltemplate.query', [['name', '=', f'{acltype}_RESTRICTED']], {'get': True})
     acl = entry['acl']
@@ -46,12 +48,14 @@ def create_entry_type(acltype):
 
 @pytest.fixture(scope='function')
 def tmp_posix_entry():
-    yield create_entry_type('POSIX')
+    with create_entry_type('POSIX') as entry:
+        yield entry
 
 
 @pytest.fixture(scope='function')
 def tmp_nfs_entry():
-    yield create_entry_type('NFSV4')
+    with create_entry_type('NFSV4') as entry:
+        yield entry
 
 
 @pytest.fixture(scope='function')
