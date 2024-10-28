@@ -31,8 +31,8 @@ __all__ = [
     'AclTemplateUpdateArgs', 'AclTemplateUpdateResult',
     'AclTemplateDeleteArgs', 'AclTemplateDeleteResult',
     'FilesystemAddToAclArgs', 'FilesystemAddToAclResult',
-    'FilesystemGetaclArgs', 'FilesystemGetaclResult',
-    'FilesystemSetaclArgs', 'FilesystemSetaclResult',
+    'FilesystemGetAclArgs', 'FilesystemGetAclResult',
+    'FilesystemSetAclArgs', 'FilesystemSetAclResult',
     'FilesystemGetInheritedAclArgs', 'FilesystemGetInheritedAclResult'
 ]
 
@@ -208,7 +208,7 @@ class DISABLED_ACL(AclBaseInfo):
     trivial: Literal[True]
 
 
-class FilesystemGetaclArgs(BaseModel):
+class FilesystemGetAclArgs(BaseModel):
     path: NonEmptyString
     simplified: bool = True
     resolve_ids: bool = False
@@ -232,11 +232,11 @@ class DISABLED_ACLResult(DISABLED_ACL, AclBaseResult):
     pass
 
 
-class FilesystemGetaclResult(BaseModel):
+class FilesystemGetAclResult(BaseModel):
     result: NFS4ACLResult | POSIXACLResult | DISABLED_ACLResult
 
 
-class FilesystemSetaclOptions(BaseModel):
+class FilesystemSetAclOptions(BaseModel):
     stripacl: bool = False
     recursive: bool = False
     traverse: bool = False
@@ -245,10 +245,10 @@ class FilesystemSetaclOptions(BaseModel):
 
 
 @single_argument_args('filesystem_acl')
-class FilesystemSetaclArgs(BaseModel):
+class FilesystemSetAclArgs(BaseModel):
     path: NonEmptyString
     dacl: list[NFS4ACE] | list[POSIXACE]
-    options: FilesystemSetaclOptions = Field(default=FilesystemSetaclOptions())
+    options: FilesystemSetAclOptions = Field(default=FilesystemSetAclOptions())
     nfs41_flags: NFS4ACL_Flags = Field(default=NFS4ACL_Flags())
     uid: AceWhoId | None = ACL_UNDEFINED_ID
     user: str | None = None
@@ -268,7 +268,7 @@ class FilesystemSetaclArgs(BaseModel):
         return self
 
 
-class FilesystemSetaclResult(FilesystemGetaclResult):
+class FilesystemSetAclResult(FilesystemGetAclResult):
     pass
 
 

@@ -7,8 +7,8 @@ from pathlib import Path
 from middlewared.api import api_method
 from middlewared.api.current import (
     FilesystemAddToAclArgs, FilesystemAddToAclResult,
-    FilesystemGetaclArgs, FilesystemGetaclResult,
-    FilesystemSetaclArgs, FilesystemSetaclResult,
+    FilesystemGetAclArgs, FilesystemGetAclResult,
+    FilesystemSetAclArgs, FilesystemSetAclResult,
     FilesystemGetInheritedAclArgs, FilesystemGetInheritedAclResult,
 )
 from middlewared.schema import Bool, Dict, Int, Str, UnixPerm
