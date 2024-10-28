@@ -14,7 +14,7 @@ from middlewared.api.base.types.base import SECRET_VALUE
 from middlewared.utils.lang import undefined
 
 __all__ = [
-    "AllowExtraBaseModel", "BaseModel", "create_model_excluding_fields", "ForUpdateMetaclass",
+    "BaseModel", "create_model_excluding_fields", "ForUpdateMetaclass",
     "single_argument_args", "single_argument_result",
 ]
 
@@ -97,12 +97,6 @@ class BaseModel(PydanticBaseModel):
         :return: value of the same model in the preceding API version.
         """
         return value
-
-
-class AllowExtraBaseModel(BaseModel):
-    model_config = ConfigDict(
-        extra="allow",  # Allow extra fields
-    )
 
 
 class ForUpdateMetaclass(ModelMetaclass):
