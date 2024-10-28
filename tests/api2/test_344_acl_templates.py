@@ -101,10 +101,12 @@ def test_update_new_template(tmp_acltemplates, acltype):
 
     template_id = payload.pop('id')
     payload.pop('builtin')
-    payload['name'] = f'{payload["name"]}2'
+    orig_name = payload.pop('name')
+
+    payload['name'] = f'{orig_name}2'
 
     result = call('filesystem.acltemplate.update', template_id, payload)
-    assert result['name'] == f'{payload["name"]}2'
+    assert result['name'] == payload['name']
 
 
 def test_knownfail_builtin_delete(request):
