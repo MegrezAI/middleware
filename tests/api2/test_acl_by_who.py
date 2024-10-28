@@ -27,6 +27,7 @@ def test__posix_by_who(posix_acl_dataset):
     target = os.path.join('/mnt', posix_acl_dataset)
     the_acl = call('filesystem.getacl', target)['acl']
     the_acl.extend([
+        {'tag': 'MASK', 'id': -1, 'perms': permset_posix_full, 'default': False},
         {'tag': 'USER', 'who': 'root', 'perms': permset_posix_full, 'default': False},
         {'tag': 'GROUP', 'who': 'root', 'perms': permset_posix_full, 'default': False},
     ])
