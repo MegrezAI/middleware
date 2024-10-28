@@ -87,14 +87,13 @@ def test__acl_validation_errors_posix(posix_acl_dataset):
         {'tag': 'USER', 'perms': permset_posix_full, 'default': False},
     ])
 
-    #with pytest.raises(ClientValidationErrors):
-    #    call('filesystem.setacl', {'path': target, 'dacl': the_acl}, job=True)
+    with pytest.raises(ClientValidationErrors):
+        call('filesystem.setacl', {'path': target, 'dacl': new_acl}, job=True)
 
-    call('filesystem.setacl', {'path': target, 'dacl': the_acl}, job=True)
     new_acl = deepcopy(the_acl)
     new_acl.extend([
         {'tag': 'USER', 'perms': permset_posix_full, 'default': False, 'who': 'root', 'id': 0},
     ])
 
     with pytest.raises(ClientValidationErrors):
-        call('filesystem.setacl', {'path': target, 'dacl': the_acl}, job=True)
+        call('filesystem.setacl', {'path': target, 'dacl': new_acl}, job=True)
