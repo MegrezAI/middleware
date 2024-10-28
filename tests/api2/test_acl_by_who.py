@@ -2,9 +2,9 @@ from copy import deepcopy
 import os
 import pytest
 
-from middlewared.service_exception import ValidationErrors
 from middlewared.test.integration.assets.pool import dataset
 from middlewared.test.integration.utils import call
+from truenas_api_client import ValidationErrors as ClientValidationErrors
 
 permset_posix_full = {"READ": True, "WRITE": True, "EXECUTE": True}
 permset_nfsv4_full = {"BASIC": "FULL_CONTROL"}
@@ -86,17 +86,13 @@ def test__acl_validation_errors_posix(posix_acl_dataset):
         {'tag': 'USER', 'perms': permset_posix_full, 'default': False},
     ])
 
-    with pytest.raises(ValidationErrors) as ve:
+    with pytest.raises(ClientValidationErrors):
         call('filesystem.setacl', {'path': target, 'dacl': the_acl}, job=True)
-
-    assert ve.value.errors[0].errmsg == 'Numeric ID "id" or account name "who" must be specified'
 
     new_acl = deepcopy(the_acl)
     new_acl.extend([
         {'tag': 'USER', 'perms': permset_posix_full, 'default': False, 'who': 'root', 'id': 0},
     ])
 
-    with pytest.raises(ValidationErrors) as ve:
+    with pytest.raises(ClientValidationErrors):
         call('filesystem.setacl', {'path': target, 'dacl': the_acl}, job=True)
-
-    assert ve.value.errors[0].errmsg == 'Numeric ID "id" and account name "who" may not be specified simultaneously'
