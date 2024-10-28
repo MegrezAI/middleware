@@ -381,8 +381,8 @@ class FilesystemService(Service):
         }
 
     @api_method(
-        FilesystemGetaclArgs,
-        FilesystemGetaclResult,
+        FilesystemGetAclArgs,
+        FilesystemGetAclResult,
         roles=['FILESYSTEM_ATTRS_READ'],
     )
     def getacl(self, path, simplified, resolve_ids):
@@ -570,8 +570,8 @@ class FilesystemService(Service):
         job.set_progress(100, 'Finished setting POSIX1e ACL.')
 
     @api_method(
-        FilesystemSetaclArgs,
-        FilesystemSetaclResult,
+        FilesystemSetAclArgs,
+        FilesystemSetAclResult,
         roles=['FILESYSTEM_ATTRS_WRITE'],
         audit='Filesystem set ACL',
         audit_extended=lambda data: data['path']
