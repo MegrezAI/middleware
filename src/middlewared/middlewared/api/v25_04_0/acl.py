@@ -278,7 +278,7 @@ class AclTemplateEntry(BaseModel):
     name: str
     acltype: Literal[FS_ACL_Type.NFS4, FS_ACL_Type.POSIX1E]
     acl: list[NFS4ACE] | list[POSIXACE]
-    comment: str
+    comment: str = ''
 
 
 class AclTemplateCreate(AclTemplateEntry):
