@@ -36,6 +36,8 @@ def create_entry_type(acltype):
         'acltype': entry['acltype']
     }
 
+    template = call('filesystem.acltemplate.create', payload)
+
     try:
         template = call('filesystem.acltemplate.create', payload)
         yield template
