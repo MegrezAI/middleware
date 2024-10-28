@@ -286,7 +286,7 @@ class AclTemplateCreate(AclTemplateEntry):
     builtin: Excluded = excluded_field()
 
 
-class AclTemplateCreateArgs(AclTemplateEntry):
+class AclTemplateCreateArgs(BaseModel):
     acltemplate_create: AclTemplateCreate
 
 
