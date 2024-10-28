@@ -10,7 +10,12 @@ from middlewared.service import CallError, CRUDService, ValidationErrors
 from middlewared.service import private
 from middlewared.plugins.smb import SMBBuiltin
 from middlewared.utils.directoryservices.constants import DSStatus, DSType
-from middlewared.utils.filesystem.acl import FS_ACL_Type
+from middlewared.utils.filesystem.acl import (
+    ACL_UNDEFINED_ID,
+    FS_ACL_Type,
+    NFS4_SPECIAL_ENTRIES,
+    POSIX_SPECIAL_ENTRIES
+)
 from .utils import canonicalize_nfs4_acl, gen_aclstring_posix1e
 
 import middlewared.sqlalchemy as sa
@@ -45,12 +50,43 @@ class ACLTemplateService(CRUDService):
         await self._ensure_unique(verrors, schema, 'name', data['name'], template_id)
 
         acltype = FS_ACL_Type(data['acltype'])
-        if acltype is FS_ACL_Type.POSIX1E:
-            gen_aclstring_posix1e(copy.deepcopy(data['acl']), False, verrors)
 
         for idx, ace in enumerate(data['acl']):
             if ace.get('id') is None:
-                verrors.add(f'{schema}.{idx}.id', 'null id is not permitted.')
+                ace['id'] = ACL_UNDEFINED_ID
+
+            if ace['tag'] in NFS4_SPECIAL_ENTRIES | POSIX_SPECIAL_ENTRIES:
+                continue
+
+            ace_who = ace.pop('who', None)
+            if ace['id'] != ACL_UNDEFINED_ID:
+                if ace_who:
+                    verrors.add(f'{schema}.{idx}.who',
+                                f'id and who may not be simultaneously specified in ACL entry')
+                continue
+
+            if ace_who is None:
+                verrors.add(f'{schema}.{idx}.id', 'identifier (uid, gid, who) is required')
+                continue
+
+            match ace['tag']:
+                case 'USER':
+                    entry = await self.middleware.call('user.query', [['username', '=', ace['who']]])
+                    entry_key = 'uid'
+                case 'GROUP':
+                    entry = await self.middleware.call('group.query', [['group', '=', ace['who']]])
+                    entry_key = 'gid'
+                case _:
+                    raise TypeError(f'{ace["tag"]}: unexpected ace tag.')
+
+            if not entry:
+                verrors.add(f'{schema}.{idx}.who', f'{ace["who"]}: {ace["tag"].lower()} does not exist')
+                continue
+
+            ace['id'] = entry[0][entry_key]
+
+        if acltype is FS_ACL_Type.POSIX1E:
+            gen_aclstring_posix1e(copy.deepcopy(data['acl']), False, verrors)
 
     @api_method(
         AclTemplateCreateArgs,
