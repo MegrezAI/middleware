@@ -108,6 +108,8 @@ def parse_values(lines):
         line = lines.pop(0).strip()
         if line == '}':
             return values
+        elif line == '' or line.startswith('#'):
+            continue
         sline = line.split()
         if sline[0] == 'LUN':
             values['LUN'][sline[1]] = sline[2]
