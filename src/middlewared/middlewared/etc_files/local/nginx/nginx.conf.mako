@@ -192,9 +192,45 @@ http {
 
         ${security_headers()}
 
+        # Puter
         location / {
-            allow all;
-            rewrite ^.* $scheme://$http_host/ui/ redirect;
+            proxy_pass http://127.0.0.1:4100;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
+        }
+
+        # Puter socket.io
+        location /socket.io/ {
+            proxy_pass http://127.0.0.1:4100;  
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        # Puter api
+        location /api/puter/ {
+            proxy_pass http://127.0.0.1:4100/;
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
+        }
+        
+        # nas-broadcast api
+        location /api/nas/ {
+            proxy_pass http://127.0.0.1:53315/;
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
         }
 
 % for device in display_devices:
