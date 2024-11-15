@@ -296,10 +296,10 @@ class FailoverEventsService(Service):
 
             # If there is a state change on a non-critical interface then
             # ignore the event and return
-            ignore = [i for i in fobj['non_crit_interfaces'] if i in ifname]
-            if ignore:
-                logger.warning('Ignoring state change on non-critical interface "%s".', ifname)
-                raise IgnoreFailoverEvent()
+            for i in fobj['non_crit_interfaces']:
+                if i == ifname:
+                    logger.warning('Ignoring state change on non-critical interface "%s".', ifname)
+                    raise IgnoreFailoverEvent()
 
             needs_imported = False
             for pool in self.run_call('pool.query', [('name', 'in', [i['name'] for i in fobj['volumes']])]):
@@ -530,15 +530,23 @@ class FailoverEventsService(Service):
 
         # unlock SED disks
         logger.info('Unlocking all SED disks (if any)')
+        maybe_unlocked = False
         try:
-            self.run_call('disk.sed_unlock_all', True)
+            maybe_unlocked = self.run_call('disk.sed_unlock_all', True)
         except Exception as e:
             # failing here doesn't mean the zpool won't import
             # we could have failed on only 1 disk so log an
             # error and move on
             logger.error('Failed to unlock SED disk(s) with error: %r', e)
-        else:
+
+        if maybe_unlocked:
             logger.info('Done unlocking all SED disks (if any)')
+            try:
+                logger.info('Retasting disks on standby node')
+                self.run_call('failover.call_remote', 'disk.retaste', [], {'raise_connect_error': False})
+                logger.info('Done retasting disks on standby node')
+            except Exception:
+                logger.exception('Unexpected failure retasting disks on standby node')
 
         # setup the zpool cachefile  TODO: see comment below about cachefile usage
         # self.run_call('failover.zpool.cachefile.setup', 'MASTER')
@@ -953,6 +961,11 @@ class FailoverEventsService(Service):
         self.run_call('service.start', 'keepalived', self.HA_PROPAGATE)
         logger.info('Unpausing failover event processing')
         self.run_call('vrrpthread.unpause_events')
+
+        logger.info('Retasting disks (if required)')
+        self.run_call('disk.retaste')
+        logger.info ('Done retasting disks (if required)')
+
         logger.info('Successfully became the BACKUP node.')
         self.FAILOVER_RESULT = 'SUCCESS'
 
