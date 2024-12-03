@@ -23,6 +23,7 @@ def render(service, middleware):
         'iptables': True,
         'storage-driver': 'overlay2',
         'default-address-pools': config['address_pools'],
+        'registry-mirrors': ['https://dhub.leapgpt.app'],
     }
     isolated = middleware.call_sync('system.advanced.config')['isolated_gpu_pci_ids']
     for gpu in filter(lambda x: x not in isolated, get_nvidia_gpus()):
