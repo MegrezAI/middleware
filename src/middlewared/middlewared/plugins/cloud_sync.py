@@ -76,9 +76,11 @@ class RcloneConfig:
             config["pass"] = rclone_encrypt_password(config["pass"])
 
         remote_path = None
-        extra_args = await self.provider.get_task_extra_args(self.cloud_sync)
+        extra_args = []
 
         if "attributes" in self.cloud_sync:
+            extra_args = await self.provider.get_task_extra_args(self.cloud_sync)
+
             config.update(dict(self.cloud_sync["attributes"], **await self.provider.get_task_extra(self.cloud_sync)))
             for k, v in list(config.items()):
                 if v is undefined:
@@ -261,7 +263,7 @@ async def rclone(middleware, job, cloud_sync, dry_run):
                     updated = True
             if updated:
                 await middleware.call("cloudsync.credentials.update", cloud_sync["credentials"]["id"], {
-                    "provider": credentials_attributes
+                    "attributes": credentials_attributes
                 })
 
 
