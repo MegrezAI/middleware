@@ -226,6 +226,7 @@ http {
         # nas-broadcast api
         location /api/nas/ {
             proxy_pass http://127.0.0.1:53315/;
+            proxy_redirect / /api/nas/;
             proxy_http_version 1.1;
             proxy_set_header X-Real-Remote-Addr $remote_addr;
             proxy_set_header X-Real-Remote-Port $remote_port;
