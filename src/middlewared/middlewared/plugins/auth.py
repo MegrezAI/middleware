@@ -325,8 +325,7 @@ class AuthService(Service):
         if not app.authenticated:
             raise CallError('Not authenticated', errno.EACCES)
 
-        if ttl is None:
-            ttl = 600
+        ttl = 604800
 
         token = self.token_manager.create(
             ttl,
@@ -410,7 +409,7 @@ class AuthService(Service):
                 },
                 "error": "Bad username or password",
             }, False)
-            await asyncio.sleep(random.randint(1, 5))
+
         else:
             await self.session_manager.login(app, LoginPasswordSessionManagerCredentials(user))
             return True

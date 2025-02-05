@@ -63,7 +63,7 @@ class FilesystemService(Service):
             return loc
 
         if any(st['realpath'].startswith(prefix)
-               for prefix in ('/home/admin/.ssh', '/home/truenas_admin/.ssh', '/root/.ssh')):
+               for prefix in ('/home/admin/.ssh', '/home/admin/.ssh', '/root/.ssh')):
             return loc
 
         if not st['realpath'].startswith('/mnt/'):

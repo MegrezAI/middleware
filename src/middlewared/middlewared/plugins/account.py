@@ -1186,7 +1186,7 @@ class UserService(CRUDService):
 
     @no_auth_required
     @accepts(
-        Str('username', enum=['root', 'truenas_admin']),
+        Str('username', enum=['root', 'admin']),
         Password('password'),
         Dict(
             'options',
@@ -1208,7 +1208,7 @@ class UserService(CRUDService):
         if await self.middleware.call('user.has_local_administrator_set_up'):
             raise CallError('Local administrator is already set up', errno.EEXIST)
 
-        if username == 'truenas_admin':
+        if username == 'admin':
             # first check based on NSS to catch collisions with AD / LDAP users
             try:
                 pwd_obj = await self.middleware.call('user.get_user_obj', {'uid': ADMIN_UID})

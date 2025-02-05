@@ -14,7 +14,7 @@ class AdminSessionAlertClass(AlertClass):
         "To improve security, create one or more administrator accounts (see "
         "[documentation](https://www.truenas.com/docs/scale/scaletutorials/credentials/adminroles/)) "
         "with unique usernames and passwords and disable password access for default "
-        "administrator accounts (**root**, **admin**, or **truenas_admin**)."
+        "administrator accounts (**root**, **admin**, or **admin**)."
     )
 
 
@@ -47,7 +47,7 @@ class AdminSessionAlertSource(AlertSource):
             'query-filters': [
                 ['message_timestamp', '>', now - 86400],
                 ['event', '=', 'AUTHENTICATION'],
-                ['username', 'in', ['root', 'admin', 'truenas_admin']],
+                ['username', 'in', ['root', 'admin', 'admin']],
                 ['success', '=', True]
             ],
             'query-options': {

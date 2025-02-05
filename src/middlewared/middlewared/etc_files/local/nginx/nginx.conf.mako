@@ -192,9 +192,77 @@ http {
 
         ${security_headers()}
 
+        # Puter
         location / {
-            allow all;
-            rewrite ^.* $scheme://$http_host/ui/ redirect;
+            proxy_pass http://127.0.0.1:4100;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
+        }
+
+        # Puter socket.io
+        location /socket.io/ {
+            proxy_pass http://127.0.0.1:4100;  
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        # Puter api
+        location /api/puter/ {
+            proxy_pass http://127.0.0.1:4100/;
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
+        }
+
+        # Jellyfin
+        location /jellyfin/ {
+            # Proxy main Jellyfin traffic
+            proxy_pass http://127.0.0.1:8096/;
+            proxy_pass_request_headers on;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $http_host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $http_connection;
+
+            # Disable buffering when the nginx proxy gets very resource heavy upon streaming
+            proxy_buffering off;
+        }
+
+        location /jellyfin/socket {
+            # Proxy Jellyfin Websockets traffic
+            proxy_pass http://127.0.0.1:8096;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Protocol $scheme;
+            proxy_set_header X-Forwarded-Host $http_host;
+        }
+        
+        # nas-broadcast api
+        location /api/nas/ {
+            proxy_pass http://127.0.0.1:53315/;
+            proxy_redirect / /api/nas/;
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-Remote-Addr $remote_addr;
+            proxy_set_header X-Real-Remote-Port $remote_port;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $remote_addr;
         }
 
 % for device in display_devices:
